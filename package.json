@@ -9,5 +9,9 @@
   },
   "devDependencies": {
     "nuxt": "^3.2.3"
+  },
+  "dependencies": {
+    "chart.js": "^4.2.1",
+    "vue-chartjs": "^5.2.0"
   }
 }
