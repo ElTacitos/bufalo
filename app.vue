@@ -1,6 +1,6 @@
 <template>
-  <div class="home">
-    <Line :data="data" :options="options" />
+  <div class="home" v-if="loaded" >
+    <Line :data="chartData" :options="chartOptions"/>
     <span class="text">
       Le cours actuel du bufalo est de:
     </span>
@@ -10,69 +10,65 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-} from 'chart.js'
+<script>
 import { Line } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
 
-const maxValue = 10;
-const minValue = 2;
+ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
-
-function getLast5minLabels() {
-  const labels = [];
-  for (let i = 0; i < 5; i++) {
-    labels.push(new Date(Date.now() - 60*1000*i).toLocaleTimeString());
-  }
-  return labels.reverse();
-}
-
-function getRandomValue(count: number) {
-  const values = [];
-  for (let i = 0; i < count; i++) {
-    values.push(Math.floor(Math.random() * (maxValue-minValue)) + minValue);
-  }
-
-  return values;
-}
-const values = getRandomValue(5);
-const currentValue = values[values.length - 1];
-const data = {
-  labels: getLast5minLabels(),
-  datasets: [
-    {
-      label: 'Cours du bufalo',
-      backgroundColor: '#f87979',
-      data: values,
-      fill: false,
-      clip: {left: false, top: 50, right: false, bottom: false}
-    }
-  ]
-}
-
-const options = {
-  responsive: true,
-  scales: {
-    y: {
-      min: 0,
-      max: 12,
-      ticks: {
-        stepSize: 1
+export default {
+  name: 'BarChart',
+  components: { Line },
+  data: () => ({
+    loaded: false,
+    chartOptions: {
+      responsive: true,
+      scales: {
+        y: {
+          min: 0,
+          max: 10,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
       }
-    }
-  },
-  plugins: {
-    legend: {
-      display: false
+    },
+    chartData: {
+      labels: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+      datasets: [
+        {
+          label: 'Cours du bufalo',
+          backgroundColor: '#f87979',
+          data: [40, 39, 10, 40, 39, 80, 40, 39, 10, 40, 39, 80],
+          fill: false,
+          clip: {left: false, top: 50, right: false, bottom: false}
+        }
+      ]
+    },
+    currentValue: 0
+  }),
+  async mounted () {
+    this.loaded = false
+
+    try {
+      const response = await fetch('https://arxkqpaohfbusj4uiz4ja6bsru0eqwpl.lambda-url.eu-west-3.on.aws/')
+      const data = await response.json()
+
+      data.sort((a, b) => a.id - b.id)
+
+      this.chartData.datasets[0].data = data.map((item) => item.value)
+      this.chartData.labels = data.map((item) => new Date(Number(item.id)).toLocaleTimeString())
+
+      this.currentValue = data[data.length - 1].value
+
+      this.loaded = true
+    } catch (e) {
+      console.error(e)
     }
   }
 }
